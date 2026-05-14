@@ -1,0 +1,128 @@
+{
+  "identifier": "com.vitoegg.fireworks.bobtranslate",
+  "version": "0.0.1",
+  "category": "translate",
+  "name": "Fireworks 翻译",
+  "summary": "使用 Fireworks 模型的 Bob 翻译插件。",
+  "icon": "146",
+  "author": "vitoegg",
+  "homepage": "https://github.com/vitoegg/BobTranslate",
+  "appcast": "https://raw.githubusercontent.com/vitoegg/BobTranslate/main/appcast/fireworks.json",
+  "minBobVersion": "1.8.0",
+  "options": [
+    {
+      "identifier": "apiKey",
+      "type": "text",
+      "title": "API Key",
+      "textConfig": {
+        "type": "secure",
+        "placeholderText": "请输入 Fireworks API Key"
+      }
+    },
+    {
+      "identifier": "model",
+      "type": "menu",
+      "title": "模型",
+      "defaultValue": "accounts/fireworks/models/qwen3p6-plus",
+      "menuValues": [
+        {
+          "title": "Qwen3.6 Plus",
+          "value": "accounts/fireworks/models/qwen3p6-plus"
+        },
+        {
+          "title": "Kimi K2.6",
+          "value": "accounts/fireworks/models/kimi-k2p6"
+        },
+        {
+          "title": "自定义模型",
+          "value": "custom"
+        }
+      ]
+    },
+    {
+      "identifier": "customModel",
+      "type": "text",
+      "title": "自定义模型",
+      "textConfig": {
+        "type": "visible",
+        "placeholderText": "例如：accounts/fireworks/models/qwen3p6-plus"
+      },
+      "desc": "仅在「模型」选择「自定义模型」时生效。"
+    },
+    {
+      "identifier": "reasoningEffort",
+      "type": "menu",
+      "title": "深度思考",
+      "defaultValue": "none",
+      "menuValues": [
+        {
+          "title": "禁用思考",
+          "value": "none"
+        },
+        {
+          "title": "低",
+          "value": "low"
+        },
+        {
+          "title": "中",
+          "value": "medium"
+        },
+        {
+          "title": "高",
+          "value": "high"
+        }
+      ],
+      "desc": "默认禁用模型思考。"
+    },
+    {
+      "identifier": "maxTokens",
+      "type": "menu",
+      "title": "最大输出 token 数",
+      "defaultValue": "1024",
+      "menuValues": [
+        {
+          "title": "512 tokens",
+          "value": "512"
+        },
+        {
+          "title": "1024 tokens",
+          "value": "1024"
+        },
+        {
+          "title": "2048 tokens",
+          "value": "2048"
+        },
+        {
+          "title": "4096 tokens",
+          "value": "4096"
+        }
+      ],
+      "desc": "用于限制返回结果的最大输出 token 数量。"
+    },
+    {
+      "identifier": "temperature",
+      "type": "menu",
+      "title": "温度",
+      "defaultValue": "0",
+      "menuValues": [
+        {
+          "title": "0.0",
+          "value": "0"
+        },
+        {
+          "title": "0.2",
+          "value": "0.2"
+        },
+        {
+          "title": "0.5",
+          "value": "0.5"
+        },
+        {
+          "title": "1.0",
+          "value": "1"
+        }
+      ],
+      "desc": "温度越低，结果越稳定。"
+    }
+  ]
+}
