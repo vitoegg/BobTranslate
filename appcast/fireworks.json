@@ -4,10 +4,10 @@
     {
       "version": "0.0.1",
       "desc": "Fireworks 翻译 0.0.1",
-      "sha256": "1d6ec4b4cbc124f8fac14a2f41570c4c9dd46c01998a9fb1e93d75bf508de0c4",
-      "url": "https://github.com/vitoegg/BobTranslate/releases/download/v0.0.1/fireworks-bob-translate.bobplugin",
+      "sha256": "71e00141262b253e30b8bd0ba4ea07a75e075c546d237d6c66007fd318018d1e",
+      "url": "https://github.com/vitoegg/BobTranslate/releases/download/bobplugin-20260520-2-1/fireworks-bob-translate.bobplugin",
       "minBobVersion": "1.8.0",
-      "timestamp": 1778747682318
+      "timestamp": 1779269513752
     }
   ]
 }
