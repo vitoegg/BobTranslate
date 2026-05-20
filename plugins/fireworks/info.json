@@ -23,8 +23,12 @@
       "identifier": "model",
       "type": "menu",
       "title": "模型",
-      "defaultValue": "accounts/fireworks/models/qwen3p6-plus",
+      "defaultValue": "accounts/fireworks/models/deepseek-v4-flash",
       "menuValues": [
+        {
+          "title": "DeepSeek V4 Flash",
+          "value": "accounts/fireworks/models/deepseek-v4-flash"
+        },
         {
           "title": "Qwen3.6 Plus",
           "value": "accounts/fireworks/models/qwen3p6-plus"
