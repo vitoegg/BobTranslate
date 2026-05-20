@@ -2,12 +2,12 @@
   "identifier": "com.vitoegg.openai.bobtranslate",
   "versions": [
     {
-      "version": "0.0.1",
-      "desc": "OpenAI 翻译 0.0.1",
-      "sha256": "dd80f3eb5262d66edaaddbcd43220a28d9ac49ad722b3a4d8bcb49bdd381ce81",
-      "url": "https://github.com/vitoegg/BobTranslate/releases/download/v0.0.1/openai-bob-translate.bobplugin",
+      "version": "0.1.1",
+      "desc": "feat: add streaming support and unify request bodies",
+      "sha256": "e9fd24c3d7962263efa61d318e3e80d31704f446a8c818ee1d4fcf892d19c427",
+      "url": "https://github.com/vitoegg/BobTranslate/releases/download/bobplugin-20260520-3-1/openai-bob-translate.bobplugin",
       "minBobVersion": "1.8.0",
-      "timestamp": 1778747682318
+      "timestamp": 1779273876440
     }
   ]
 }
