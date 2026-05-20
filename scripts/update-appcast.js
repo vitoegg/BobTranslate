@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -47,22 +48,36 @@ function sha256(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
 
+function commitDesc() {
+  try {
+    return execFileSync("git", ["log", "-1", "--pretty=%B"], {
+      cwd: ROOT_DIR,
+      encoding: "utf8"
+    }).trim();
+  } catch (_) {
+    return "";
+  }
+}
+
 function writeJson(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n");
 }
 
 fs.mkdirSync(path.join(ROOT_DIR, "appcast"), { recursive: true });
 
+const commitDescription = commitDesc();
+
 for (const plugin of selectedPlugins) {
   const info = readJson(path.join(ROOT_DIR, "plugins", plugin.provider, "info.json"));
   const packagePath = path.join(DIST_DIR, plugin.packageName);
+  const desc = commitDescription || `${info.name} ${info.version}`;
 
   writeJson(path.join(ROOT_DIR, "appcast", plugin.appcastName), {
     identifier: info.identifier,
     versions: [
       {
         version: info.version,
-        desc: `${info.name} ${info.version}`,
+        desc: desc,
         sha256: sha256(packagePath),
         url: `https://github.com/${REPO}/releases/download/${RELEASE_TAG}/${plugin.packageName}`,
         minBobVersion: info.minBobVersion,

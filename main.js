@@ -7,17 +7,19 @@ var PROVIDERS = {
       "gpt-5.4-nano": true,
       "gpt-5.4-mini": true
     },
-    request: requestOpenAI
+    request: requestOpenAI,
+    streamRequest: streamOpenAI
   },
   "com.vitoegg.fireworks.bobtranslate": {
     title: "Fireworks",
-    url: "https://api.fireworks.ai/inference/v1/chat/completions",
+    url: "https://api.fireworks.ai/inference/v1/responses",
     defaultModel: "accounts/fireworks/models/qwen3p6-plus",
     models: {
       "accounts/fireworks/models/qwen3p6-plus": true,
       "accounts/fireworks/models/kimi-k2p6": true
     },
-    request: requestFireworks
+    request: requestFireworks,
+    streamRequest: streamFireworks
   }
 };
 
@@ -68,7 +70,7 @@ function translate(query, completion) {
   }
 
   var prompt = buildPrompt(query);
-  PROVIDER.request(config, prompt.system, prompt.user, query.cancelSignal, function(result) {
+  PROVIDER.streamRequest(config, prompt.system, prompt.user, query, function(result) {
     if (result.error) {
       complete(query, completion, { error: result.error });
       return;
@@ -166,16 +168,7 @@ function buildPrompt(query) {
 }
 
 function requestOpenAI(config, systemPrompt, userPrompt, cancelSignal, callback) {
-  var body = {
-    model: config.model,
-    input: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
-    ],
-    reasoning: { effort: config.reasoningEffort },
-    max_output_tokens: config.maxTokens,
-    temperature: config.temperature
-  };
+  var body = responsesBody(config, systemPrompt, userPrompt);
 
   sendRequest(PROVIDER.url, config.apiKey, body, cancelSignal, function(resp) {
     var error = responseError(resp);
@@ -193,20 +186,8 @@ function requestOpenAI(config, systemPrompt, userPrompt, cancelSignal, callback)
 }
 
 function requestFireworks(config, systemPrompt, userPrompt, cancelSignal, callback) {
-  var body = {
-    model: config.model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
-    ],
-    reasoning_effort: config.reasoningEffort,
-    max_tokens: config.maxTokens,
-    temperature: config.temperature
-  };
-
-  if (config.reasoningEffort === "none") {
-    body.reasoning_history = "disabled";
-  }
+  var body = responsesBody(config, systemPrompt, userPrompt);
+  body.store = false;
 
   sendRequest(PROVIDER.url, config.apiKey, body, cancelSignal, function(resp) {
     var error = responseError(resp);
@@ -217,10 +198,29 @@ function requestFireworks(config, systemPrompt, userPrompt, cancelSignal, callba
 
     var data = resp.data || {};
     callback({
-      text: extractChatText(data),
+      text: extractOpenAIText(data),
       raw: data
     });
   });
+}
+
+function streamOpenAI(config, systemPrompt, userPrompt, query, callback) {
+  streamResponses(PROVIDER.url, config, systemPrompt, userPrompt, query, false, callback);
+}
+
+function streamFireworks(config, systemPrompt, userPrompt, query, callback) {
+  streamResponses(PROVIDER.url, config, systemPrompt, userPrompt, query, true, callback);
+}
+
+function responsesBody(config, systemPrompt, userPrompt) {
+  return {
+    model: config.model,
+    instructions: systemPrompt,
+    input: userPrompt,
+    reasoning: { effort: config.reasoningEffort },
+    max_output_tokens: config.maxTokens,
+    temperature: config.temperature
+  };
 }
 
 function sendRequest(url, apiKey, body, cancelSignal, handler) {
@@ -241,6 +241,66 @@ function sendRequest(url, apiKey, body, cancelSignal, handler) {
   }
 
   $http.request(request);
+}
+
+function streamResponses(url, config, systemPrompt, userPrompt, query, disableStore, callback) {
+  var body = responsesBody(config, systemPrompt, userPrompt);
+  var state = {
+    buffer: "",
+    text: "",
+    raw: null,
+    error: null
+  };
+  body.stream = true;
+  if (disableStore) {
+    body.store = false;
+  }
+
+  sendStreamRequest(url, config.apiKey, body, query.cancelSignal, function(stream) {
+    parseSSE(state, stream.text || "", function(event) {
+      handleStreamEvent(query, state, event);
+    });
+  }, function(resp) {
+    parseSSE(state, "", function(event) {
+      handleStreamEvent(query, state, event);
+    });
+
+    var error = responseError(resp);
+    if (error) {
+      callback({ error: error });
+      return;
+    }
+    if (state.error) {
+      callback({ error: state.error });
+      return;
+    }
+
+    callback({
+      text: state.text,
+      raw: state.raw
+    });
+  });
+}
+
+function sendStreamRequest(url, apiKey, body, cancelSignal, streamHandler, handler) {
+  var request = {
+    method: "POST",
+    url: url,
+    header: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + apiKey
+    },
+    body: body,
+    timeout: 120,
+    streamHandler: streamHandler,
+    handler: handler
+  };
+
+  if (cancelSignal) {
+    request.cancelSignal = cancelSignal;
+  }
+
+  $http.streamRequest(request);
 }
 
 function responseError(resp) {
@@ -279,6 +339,9 @@ function extractOpenAIText(data) {
     if (!item || !item.content) {
       continue;
     }
+    if (item.role && item.role !== "assistant") {
+      continue;
+    }
     for (var j = 0; j < item.content.length; j++) {
       var content = item.content[j];
       if (typeof content.text === "string") {
@@ -289,36 +352,117 @@ function extractOpenAIText(data) {
   return parts.join("\n");
 }
 
-function extractChatText(data) {
-  if (!data || !data.choices || !data.choices.length) {
-    return "";
-  }
-
-  var message = data.choices[0].message || {};
-  var content = message.content;
-  if (typeof content === "string") {
-    return content;
-  }
-
-  if (content && content.length) {
-    var parts = [];
-    for (var i = 0; i < content.length; i++) {
-      if (typeof content[i].text === "string") {
-        parts.push(content[i].text);
-      }
-    }
-    return parts.join("\n");
-  }
-
-  return "";
-}
-
 function complete(query, completion, payload) {
   if (query && typeof query.onCompletion === "function") {
     query.onCompletion(payload);
   } else if (typeof completion === "function") {
     completion(payload);
   }
+}
+
+function streamComplete(query, text) {
+  if (!query || typeof query.onStream !== "function") {
+    return;
+  }
+  var cleanText = cleanOutput(text);
+  if (!cleanText) {
+    return;
+  }
+  query.onStream({
+    result: {
+      from: normalizeLang(query.detectFrom || query.from),
+      to: normalizeLang(query.detectTo || query.to),
+      toParagraphs: splitParagraphs(cleanText)
+    }
+  });
+}
+
+function handleStreamEvent(query, state, event) {
+  state.raw = event;
+  var error = streamEventError(event);
+  if (error) {
+    state.error = error;
+    return;
+  }
+
+  var delta = extractStreamDelta(event);
+  if (!delta) {
+    return;
+  }
+  state.text += delta;
+  streamComplete(query, state.text);
+}
+
+function parseSSE(state, text, onEvent) {
+  state.buffer += text;
+
+  var chunks = state.buffer.split(/\r?\n\r?\n/);
+  state.buffer = chunks.pop();
+  for (var i = 0; i < chunks.length; i++) {
+    parseSSEChunk(chunks[i], onEvent);
+  }
+
+  if (!text && trim(state.buffer)) {
+    parseSSEChunk(state.buffer, onEvent);
+    state.buffer = "";
+  }
+}
+
+function parseSSEChunk(chunk, onEvent) {
+  var lines = chunk.split(/\r?\n/);
+  var dataLines = [];
+
+  for (var i = 0; i < lines.length; i++) {
+    if (lines[i].indexOf("data:") === 0) {
+      dataLines.push(lines[i].slice(5).replace(/^\s/, ""));
+    }
+  }
+
+  if (!dataLines.length) {
+    return;
+  }
+
+  var data = dataLines.join("\n");
+  if (data === "[DONE]") {
+    return;
+  }
+
+  try {
+    onEvent(JSON.parse(data));
+  } catch (_) {}
+}
+
+function extractStreamDelta(event) {
+  if (!event) {
+    return "";
+  }
+  if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
+    return event.delta;
+  }
+  if (event.delta && typeof event.delta === "string") {
+    return event.delta;
+  }
+  if (event.choices && event.choices.length) {
+    var delta = event.choices[0].delta || {};
+    if (typeof delta.content === "string") {
+      return delta.content;
+    }
+  }
+  return "";
+}
+
+function streamEventError(event) {
+  if (!event) {
+    return null;
+  }
+  if (event.type === "error" || event.error) {
+    var error = event.error || event;
+    return makeError("api", errorMessage(error) || "接口返回异常", error);
+  }
+  if (event.type === "response.failed" && event.response && event.response.error) {
+    return makeError("api", errorMessage(event.response.error) || "接口返回异常", event.response.error);
+  }
+  return null;
 }
 
 function splitParagraphs(text) {

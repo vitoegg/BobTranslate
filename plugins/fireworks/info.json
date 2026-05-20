@@ -1,6 +1,6 @@
 {
   "identifier": "com.vitoegg.fireworks.bobtranslate",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "category": "translate",
   "name": "Fireworks 翻译",
   "summary": "使用 Fireworks 模型的 Bob 翻译插件。",
