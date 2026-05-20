@@ -2,11 +2,22 @@ name: Release BobTranslate
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+    paths:
+      - "plugins/**/info.json"
+      - "main.js"
+      - "scripts/package.sh"
+      - "scripts/update-appcast.js"
+      - ".github/workflows/release-bobplugin.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-bobplugin
+  cancel-in-progress: false
 
 jobs:
   release-bobplugin:
@@ -20,31 +31,72 @@ jobs:
       - name: Build plugins
         run: ./scripts/package.sh
 
-      - name: Create release
+      - name: Detect changed plugins
+        id: changes
+        run: |
+          changed=""
+
+          check_plugin() {
+            provider="$1"
+            package_path="$2"
+            appcast_path="$3"
+
+            new_sha="$(sha256sum "$package_path" | awk '{print $1}')"
+            old_sha="$(node -e "const fs = require('fs'); const file = process.argv[1]; try { const appcast = JSON.parse(fs.readFileSync(file, 'utf8')); console.log(appcast.versions?.[0]?.sha256 || ''); } catch { console.log(''); }" "$appcast_path")"
+
+            if [ "$new_sha" != "$old_sha" ]; then
+              changed="${changed:+$changed }$provider"
+            fi
+          }
+
+          check_plugin "openai" "dist/openai-bob-translate.bobplugin" "appcast/openai.json"
+          check_plugin "fireworks" "dist/fireworks-bob-translate.bobplugin" "appcast/fireworks.json"
+
+          echo "providers=$changed" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$changed" ]; then
+            echo "tag=bobplugin-$(date -u +%Y%m%d)-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release and update appcast
+        if: steps.changes.outputs.providers != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          printf '%s\n%s\n' \
-            '🚀 🚀 🚀' \
-            'A Bob translation plugin supporting OpenAI and Fireworks models with non-reasoning mode.' \
-            > release-notes.md
-
-          gh release create "$GITHUB_REF_NAME" \
-            dist/openai-bob-translate.bobplugin \
-            dist/fireworks-bob-translate.bobplugin \
-            --title "$GITHUB_REF_NAME" \
-            --notes-file release-notes.md
-
-      - name: Update appcast
-        run: node scripts/update-appcast.js
-
-      - name: Commit appcast
+          RELEASE_TAG: ${{ steps.changes.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          printf '%s\n%s\n%s\n' \
+            '🚀 🚀 🚀' \
+            'A Bob translation plugin supporting OpenAI and Fireworks models with non-reasoning mode.' \
+            "Updated plugins: ${{ steps.changes.outputs.providers }}" \
+            > release-notes.md
+
+          git tag "$RELEASE_TAG"
+          git push origin "$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file release-notes.md
+
+          for provider in ${{ steps.changes.outputs.providers }}; do
+            case "$provider" in
+              openai)
+                gh release upload "$RELEASE_TAG" "dist/openai-bob-translate.bobplugin" --clobber
+                node scripts/update-appcast.js openai
+                ;;
+              fireworks)
+                gh release upload "$RELEASE_TAG" "dist/fireworks-bob-translate.bobplugin" --clobber
+                node scripts/update-appcast.js fireworks
+                ;;
+              *)
+                echo "Unknown provider: $provider" >&2
+                exit 1
+                ;;
+            esac
+          done
+
           git add appcast/openai.json appcast/fireworks.json
 
           if ! git diff --cached --quiet; then
-            git commit -m "chore: update appcast for $GITHUB_REF_NAME"
+            git commit -m "chore: update appcast for $RELEASE_TAG"
             git push origin HEAD:main
           fi
