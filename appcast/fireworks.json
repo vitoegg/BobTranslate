@@ -3,11 +3,11 @@
   "versions": [
     {
       "version": "0.1.1",
-      "desc": "feat: add streaming support and unify request bodies",
-      "sha256": "f0536b81602f24ab6c56fc14ea39ce3b3e6a10c976eb5b6294fe854194336b6a",
-      "url": "https://github.com/vitoegg/BobTranslate/releases/download/bobplugin-20260520-3-1/fireworks-bob-translate.bobplugin",
+      "desc": "feat: update models to GPT-5.6 Luna and Terra",
+      "sha256": "3943a33773ebedabca11db15533626a3c448e81e164fe573377b1ed96675503b",
+      "url": "https://github.com/vitoegg/BobTranslate/releases/download/bobplugin-20260716-4-1/fireworks-bob-translate.bobplugin",
       "minBobVersion": "1.8.0",
-      "timestamp": 1779273877265
+      "timestamp": 1784169921874
     }
   ]
 }

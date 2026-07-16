@@ -2,12 +2,12 @@
   "identifier": "com.vitoegg.openai.bobtranslate",
   "versions": [
     {
-      "version": "0.1.1",
-      "desc": "feat: add streaming support and unify request bodies",
-      "sha256": "e9fd24c3d7962263efa61d318e3e80d31704f446a8c818ee1d4fcf892d19c427",
-      "url": "https://github.com/vitoegg/BobTranslate/releases/download/bobplugin-20260520-3-1/openai-bob-translate.bobplugin",
+      "version": "0.1.2",
+      "desc": "feat: update models to GPT-5.6 Luna and Terra",
+      "sha256": "86ff5f232aafc40297a34ee539969512ef540e4cec15be814390ee372ebac83c",
+      "url": "https://github.com/vitoegg/BobTranslate/releases/download/bobplugin-20260716-4-1/openai-bob-translate.bobplugin",
       "minBobVersion": "1.8.0",
-      "timestamp": 1779273876440
+      "timestamp": 1784169920927
     }
   ]
 }
