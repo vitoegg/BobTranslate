@@ -2,10 +2,10 @@ var PROVIDERS = {
   "com.vitoegg.openai.bobtranslate": {
     title: "OpenAI",
     url: "https://api.openai.com/v1/responses",
-    defaultModel: "gpt-5.4-nano",
+    defaultModel: "gpt-5.6-luna",
     models: {
-      "gpt-5.4-nano": true,
-      "gpt-5.4-mini": true
+      "gpt-5.6-luna": true,
+      "gpt-5.6-terra": true
     },
     request: requestOpenAI,
     streamRequest: streamOpenAI

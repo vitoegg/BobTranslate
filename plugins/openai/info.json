@@ -1,6 +1,6 @@
 {
   "identifier": "com.vitoegg.openai.bobtranslate",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "category": "translate",
   "name": "OpenAI 翻译",
   "summary": "使用 OpenAI 模型的 Bob 翻译插件。",
@@ -23,15 +23,15 @@
       "identifier": "model",
       "type": "menu",
       "title": "模型",
-      "defaultValue": "gpt-5.4-nano",
+      "defaultValue": "gpt-5.6-luna",
       "menuValues": [
         {
-          "title": "GPT-5.4 nano",
-          "value": "gpt-5.4-nano"
+          "title": "GPT-5.6 Luna",
+          "value": "gpt-5.6-luna"
         },
         {
-          "title": "GPT-5.4 mini",
-          "value": "gpt-5.4-mini"
+          "title": "GPT-5.6 Terra",
+          "value": "gpt-5.6-terra"
         },
         {
           "title": "自定义模型",
@@ -45,7 +45,7 @@
       "title": "自定义模型",
       "textConfig": {
         "type": "visible",
-        "placeholderText": "例如：gpt-5.4-nano"
+        "placeholderText": "例如：gpt-5.6-luna"
       },
       "desc": "仅在「模型」选择「自定义模型」时生效。"
     },
