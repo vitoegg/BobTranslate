@@ -1,0 +1,180 @@
+name: Release BobTranslate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "plugins/**"
+      - "main.js"
+      - "scripts/package.sh"
+      - "scripts/update-appcast.js"
+      - ".github/workflows/release-bobplugin.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-bobplugin
+  cancel-in-progress: false
+
+jobs:
+  release-bobplugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Build plugins
+        run: ./scripts/package.sh
+
+      - name: Detect changed plugins
+        id: changes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # 上一次发布的 appcast 就是唯一的 release 资产，没有则视为全部变更
+          prev_dir="$(mktemp -d)"
+          gh release download --pattern '*.json' --dir "$prev_dir" || true
+
+          changed=()
+
+          check_plugin() {
+            provider="$1"
+            package_path="dist/$provider-bob-translate.bobplugin"
+            prev_appcast="$prev_dir/$provider.json"
+
+            new_sha="$(sha256sum "$package_path" | awk '{print $1}')"
+            old_sha=""
+            old_version=""
+
+            if [ -f "$prev_appcast" ]; then
+              old_sha="$(jq -r '.versions[0].sha256 // ""' "$prev_appcast")"
+              old_version="$(jq -r '.versions[0].version // ""' "$prev_appcast")"
+            fi
+
+            if [ "$new_sha" = "$old_sha" ]; then
+              return 0
+            fi
+
+            new_version="$(jq -r '.version' "plugins/$provider/info.json")"
+
+            if [ -n "$old_version" ] && {
+              [ "$new_version" = "$old_version" ] ||
+              [ "$(printf '%s\n%s\n' "$old_version" "$new_version" | sort -V | tail -n 1)" != "$new_version" ];
+            }; then
+              echo "$provider package changed, but version did not increase: $old_version -> $new_version" >&2
+              exit 1
+            fi
+
+            changed+=("$provider")
+          }
+
+          check_plugin openai
+          check_plugin fireworks
+          check_plugin vercel
+
+          echo "providers=${changed[*]}" >> "$GITHUB_OUTPUT"
+
+          if [ "${#changed[@]}" -gt 0 ]; then
+            echo "tag=r-$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish release and verify appcast
+        if: steps.changes.outputs.providers != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.changes.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # appcast 的 url 与 tag 无关，可以在建 release 之前生成
+          node scripts/update-appcast.js
+
+          printf '%s\n%s\n' \
+            '🚀 🚀 🚀' \
+            'A Bob translation plugin supporting OpenAI, Fireworks and Vercel AI models with non-reasoning mode.' \
+            > release-notes.md
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release delete "$RELEASE_TAG" --yes
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            git push origin ":refs/tags/$RELEASE_TAG"
+          fi
+
+          git tag -f "$RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            dist/openai-bob-translate.bobplugin \
+            dist/fireworks-bob-translate.bobplugin \
+            dist/vercel-bob-translate.bobplugin \
+            dist/openai.json \
+            dist/fireworks.json \
+            dist/vercel.json \
+            --title "BobTranslate" \
+            --notes-file release-notes.md \
+            --latest
+
+          for provider in openai fireworks vercel; do
+            package_name="$provider-bob-translate.bobplugin"
+            expected_sha="$(sha256sum "dist/$package_name" | awk '{print $1}')"
+            expected_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/$package_name"
+            appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/$provider.json"
+
+            remote_digest="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq ".assets[] | select(.name == \"$package_name\") | .digest")"
+
+            if [ "$remote_digest" != "sha256:$expected_sha" ]; then
+              echo "$provider release asset digest mismatch" >&2
+              exit 1
+            fi
+
+            # 端到端走一遍 Bob 实际使用的 302 链路
+            remote_appcast=""
+            for attempt in 1 2 3; do
+              if remote_appcast="$(curl -fsSL "$appcast_url")"; then
+                break
+              fi
+              sleep 5
+            done
+
+            if ! printf '%s' "$remote_appcast" | jq -e \
+              --arg sha "$expected_sha" \
+              --arg url "$expected_url" \
+              '.versions[0].sha256 == $sha and .versions[0].url == $url' >/dev/null; then
+              echo "$provider appcast verification failed via $appcast_url" >&2
+              exit 1
+            fi
+          done
+
+      - name: Remove previous releases
+        if: steps.changes.outputs.providers != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.changes.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq '.[] | select(.tag_name != $ENV.RELEASE_TAG) | .tag_name' \
+            | while IFS= read -r old_tag; do
+                [ -n "$old_tag" ] || continue
+                gh release delete "$old_tag" --yes --cleanup-tag
+              done
+
+          remaining="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq 'length')"
+
+          if [ "$remaining" -ne 1 ]; then
+            echo "Expected one release, found $remaining" >&2
+            exit 1
+          fi

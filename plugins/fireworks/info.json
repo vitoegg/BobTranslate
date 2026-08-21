@@ -1,0 +1,162 @@
+{
+  "identifier": "com.vitoegg.fireworks.bobtranslate",
+  "version": "0.1.0",
+  "category": "translate",
+  "name": "Fireworks 翻译",
+  "summary": "使用 Fireworks 模型的 Bob 翻译插件。",
+  "icons": [
+    {
+      "identifier": "fireworks",
+      "type": "file",
+      "filePath": "icon.png"
+    },
+    {
+      "identifier": "minimax",
+      "type": "file",
+      "filePath": "minimax.png"
+    },
+    {
+      "identifier": "134",
+      "type": "builtIn",
+      "builtInId": "134"
+    },
+    {
+      "identifier": "130",
+      "type": "builtIn",
+      "builtInId": "130"
+    }
+  ],
+  "author": "vitoegg",
+  "homepage": "https://github.com/vitoegg/BobTranslate",
+  "appcast": "https://github.com/vitoegg/BobTranslate/releases/latest/download/fireworks.json",
+  "minBobVersion": "1.14.0",
+  "options": [
+    {
+      "identifier": "apiKey",
+      "type": "text",
+      "title": "API Key",
+      "textConfig": {
+        "type": "secure",
+        "placeholderText": "请输入 Fireworks API Key"
+      }
+    },
+    {
+      "title": "模型",
+      "identifier": "model",
+      "type": "menu",
+      "defaultValue": "accounts/fireworks/models/deepseek-v4-flash-0731",
+      "menuValues": [
+        {
+          "title": "DeepSeek V4 Flash",
+          "value": "accounts/fireworks/models/deepseek-v4-flash-0731",
+          "defaultPluginName": "DeepSeek 翻译",
+          "defaultPluginIconIdentifier": "134"
+        },
+        {
+          "title": "Qwen3.7 Plus",
+          "value": "accounts/fireworks/models/qwen3p7-plus",
+          "defaultPluginName": "Qwen 翻译",
+          "defaultPluginIconIdentifier": "130"
+        },
+        {
+          "title": "Minimax M3",
+          "value": "accounts/fireworks/models/minimax-m3",
+          "defaultPluginName": "MiniMax 翻译",
+          "defaultPluginIconIdentifier": "minimax"
+        },
+        {
+          "title": "自定义模型",
+          "value": "custom",
+          "defaultPluginName": "Fireworks 翻译",
+          "defaultPluginIconIdentifier": "fireworks"
+        }
+      ],
+      "isKeyOption": true
+    },
+    {
+      "identifier": "customModel",
+      "type": "text",
+      "title": "自定义模型",
+      "textConfig": {
+        "type": "visible",
+        "placeholderText": "例如：accounts/fireworks/models/qwen3p7-plus"
+      },
+      "desc": "仅在「模型」选择「自定义模型」时生效。"
+    },
+    {
+      "identifier": "reasoningEffort",
+      "type": "menu",
+      "title": "深度思考",
+      "defaultValue": "none",
+      "menuValues": [
+        {
+          "title": "禁用思考",
+          "value": "none"
+        },
+        {
+          "title": "低",
+          "value": "low"
+        },
+        {
+          "title": "中",
+          "value": "medium"
+        },
+        {
+          "title": "高",
+          "value": "high"
+        }
+      ],
+      "desc": "默认禁用模型思考。"
+    },
+    {
+      "identifier": "maxTokens",
+      "type": "menu",
+      "title": "最大输出 token 数",
+      "defaultValue": "1024",
+      "menuValues": [
+        {
+          "title": "512 tokens",
+          "value": "512"
+        },
+        {
+          "title": "1024 tokens",
+          "value": "1024"
+        },
+        {
+          "title": "2048 tokens",
+          "value": "2048"
+        },
+        {
+          "title": "4096 tokens",
+          "value": "4096"
+        }
+      ],
+      "desc": "用于限制返回结果的最大输出 token 数量。"
+    },
+    {
+      "identifier": "temperature",
+      "type": "menu",
+      "title": "温度",
+      "defaultValue": "0",
+      "menuValues": [
+        {
+          "title": "0.0",
+          "value": "0"
+        },
+        {
+          "title": "0.2",
+          "value": "0.2"
+        },
+        {
+          "title": "0.5",
+          "value": "0.5"
+        },
+        {
+          "title": "1.0",
+          "value": "1"
+        }
+      ],
+      "desc": "温度越低，结果越稳定。"
+    }
+  ]
+}
