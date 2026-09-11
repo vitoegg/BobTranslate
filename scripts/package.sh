@@ -1,25 +1,21 @@
 #!/usr/bin/env sh
 set -eu
+export TZ=UTC LC_ALL=C
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/.build"
 DIST_DIR="$ROOT_DIR/dist"
-OPENAI_OUT="$DIST_DIR/openai-bob-translate.bobplugin"
-FIREWORKS_OUT="$DIST_DIR/fireworks-bob-translate.bobplugin"
-VERCEL_OUT="$DIST_DIR/vercel-bob-translate.bobplugin"
 
 build_plugin() {
-  name="$1"
-  provider="$2"
-  out_file="$3"
-  work_dir="$BUILD_DIR/$name"
+  provider="$1"
+  out_file="$DIST_DIR/$provider-bob-translate.bobplugin"
+  work_dir="$BUILD_DIR/$provider"
   plugin_dir="$ROOT_DIR/plugins/$provider"
 
   mkdir -p "$work_dir"
   cp "$plugin_dir/info.json" "$work_dir/info.json"
-  cp "$ROOT_DIR/README.md" "$work_dir/README.md"
   cp "$ROOT_DIR/main.js" "$work_dir/main.js"
-  files="info.json main.js README.md"
+  files="info.json main.js"
 
   # 图标平铺在插件根目录，info.json 的 filePath 直接引用文件名
   for icon in "$plugin_dir"/*.png; do
@@ -40,8 +36,9 @@ build_plugin() {
 cd "$ROOT_DIR"
 rm -rf "$BUILD_DIR"
 mkdir -p "$DIST_DIR"
+trap 'rm -rf "$BUILD_DIR"' EXIT
 
-build_plugin "openai-bob-translate" "openai" "$OPENAI_OUT"
-build_plugin "fireworks-bob-translate" "fireworks" "$FIREWORKS_OUT"
-build_plugin "vercel-bob-translate" "vercel" "$VERCEL_OUT"
-rm -rf "$BUILD_DIR"
+for plugin_dir in "$ROOT_DIR"/plugins/*; do
+  [ -f "$plugin_dir/info.json" ] || continue
+  build_plugin "$(basename "$plugin_dir")"
+done

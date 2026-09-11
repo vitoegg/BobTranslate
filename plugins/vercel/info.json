@@ -1,6 +1,6 @@
 {
   "identifier": "com.vitoegg.vercel.bobtranslate",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "category": "translate",
   "name": "Vercel AI 翻译",
   "summary": "使用 Vercel AI 的 Bob 翻译插件。",

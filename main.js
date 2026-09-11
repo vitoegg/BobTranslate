@@ -1,44 +1,23 @@
 var PROVIDERS = {
   "com.vitoegg.openai.bobtranslate": {
     title: "OpenAI",
-    url: "https://api.openai.com/v1/responses",
-    defaultModel: "gpt-5.6-luna",
-    models: {
-      "gpt-5.6-luna": true,
-      "gpt-5.6-terra": true
-    },
-    request: requestOpenAI,
-    streamRequest: streamOpenAI
+    url: "https://api.openai.com/v1/responses"
   },
   "com.vitoegg.fireworks.bobtranslate": {
     title: "Fireworks",
-    url: "https://api.fireworks.ai/inference/v1/responses",
-    defaultModel: "accounts/fireworks/models/deepseek-v4p1-flash",
-    models: {
-      "accounts/fireworks/models/deepseek-v4p1-flash": true,
-      "accounts/fireworks/models/qwen3p7-plus": true,
-      "accounts/fireworks/models/minimax-m3": true
-    },
-    request: requestFireworks,
-    streamRequest: streamFireworks
+    url: "https://api.fireworks.ai/inference/v1/responses"
   },
   "com.vitoegg.vercel.bobtranslate": {
     title: "Vercel AI",
-    url: "https://ai-gateway.vercel.sh/v1/responses",
-    defaultModel: "meta/muse-spark-1.2-contributor",
-    models: {
-      "alibaba/qwen3.8-27b": true,
-      "google/gemini-3.7-flash": true,
-      "meta/muse-spark-1.2-contributor": true,
-      "openai/gpt-5.6-luna": true,
-      "deepseek/deepseek-v4-flash-0731": true
-    },
-    request: requestVercel,
-    streamRequest: streamVercel
+    url: "https://ai-gateway.vercel.sh/v1/responses"
   }
 };
 
 var PROVIDER = PROVIDERS[pluginIdentifier()] || PROVIDERS["com.vitoegg.openai.bobtranslate"];
+
+var MODEL_OPTION = $info.options.filter(function(option) {
+  return option.identifier === "model";
+})[0];
 
 var LANGUAGES = {
   auto: "Auto",
@@ -85,7 +64,7 @@ function translate(query, completion) {
   }
 
   var prompt = buildPrompt(query);
-  PROVIDER.streamRequest(config, prompt.system, prompt.user, query, function(result) {
+  streamTranslation(config, prompt.system, prompt.user, query, function(result) {
     if (result.error) {
       complete(query, completion, { error: result.error });
       return;
@@ -120,7 +99,7 @@ function pluginValidate(completion) {
   config.maxTokens = 16;
   config.temperature = 0;
 
-  PROVIDER.request(
+  requestTranslation(
     config,
     "You are a connection checker. Reply with exactly OK.",
     "Reply with exactly OK.",
@@ -136,7 +115,7 @@ function pluginValidate(completion) {
 }
 
 function readConfig() {
-  var selectedModel = stringOption("model", PROVIDER.defaultModel);
+  var selectedModel = stringOption("model", MODEL_OPTION.defaultValue);
 
   return {
     apiKey: stringOption("apiKey", ""),
@@ -162,11 +141,13 @@ function resolveModel(selectedModel) {
     return stringOption("customModel", "");
   }
 
-  if (PROVIDER.models[selectedModel]) {
+  if (MODEL_OPTION.menuValues.some(function(option) {
+    return option.value === selectedModel;
+  })) {
     return selectedModel;
   }
 
-  return PROVIDER.defaultModel;
+  return MODEL_OPTION.defaultValue;
 }
 
 function buildPrompt(query) {
@@ -182,7 +163,7 @@ function buildPrompt(query) {
   };
 }
 
-function requestOpenAI(config, systemPrompt, userPrompt, cancelSignal, callback) {
+function requestTranslation(config, systemPrompt, userPrompt, cancelSignal, callback) {
   var body = responsesBody(config, systemPrompt, userPrompt);
 
   sendRequest(PROVIDER.url, config.apiKey, body, cancelSignal, function(resp) {
@@ -198,61 +179,12 @@ function requestOpenAI(config, systemPrompt, userPrompt, cancelSignal, callback)
       raw: data
     });
   });
-}
-
-function requestFireworks(config, systemPrompt, userPrompt, cancelSignal, callback) {
-  var body = responsesBody(config, systemPrompt, userPrompt);
-  body.store = false;
-
-  sendRequest(PROVIDER.url, config.apiKey, body, cancelSignal, function(resp) {
-    var error = responseError(resp);
-    if (error) {
-      callback({ error: error });
-      return;
-    }
-
-    var data = resp.data || {};
-    callback({
-      text: extractOpenAIText(data),
-      raw: data
-    });
-  });
-}
-
-function requestVercel(config, systemPrompt, userPrompt, cancelSignal, callback) {
-  var body = responsesBody(config, systemPrompt, userPrompt);
-  body.store = false;
-
-  sendRequest(PROVIDER.url, config.apiKey, body, cancelSignal, function(resp) {
-    var error = responseError(resp);
-    if (error) {
-      callback({ error: error });
-      return;
-    }
-
-    var data = resp.data || {};
-    callback({
-      text: extractOpenAIText(data),
-      raw: data
-    });
-  });
-}
-
-function streamOpenAI(config, systemPrompt, userPrompt, query, callback) {
-  streamResponses(PROVIDER.url, config, systemPrompt, userPrompt, query, false, callback);
-}
-
-function streamFireworks(config, systemPrompt, userPrompt, query, callback) {
-  streamResponses(PROVIDER.url, config, systemPrompt, userPrompt, query, true, callback);
-}
-
-function streamVercel(config, systemPrompt, userPrompt, query, callback) {
-  streamResponses(PROVIDER.url, config, systemPrompt, userPrompt, query, true, callback);
 }
 
 function responsesBody(config, systemPrompt, userPrompt) {
   return {
     model: config.model,
+    store: false,
     instructions: systemPrompt,
     input: userPrompt,
     reasoning: { effort: config.reasoningEffort },
@@ -281,7 +213,7 @@ function sendRequest(url, apiKey, body, cancelSignal, handler) {
   $http.request(request);
 }
 
-function streamResponses(url, config, systemPrompt, userPrompt, query, disableStore, callback) {
+function streamTranslation(config, systemPrompt, userPrompt, query, callback) {
   var body = responsesBody(config, systemPrompt, userPrompt);
   var state = {
     buffer: "",
@@ -290,11 +222,8 @@ function streamResponses(url, config, systemPrompt, userPrompt, query, disableSt
     error: null
   };
   body.stream = true;
-  if (disableStore) {
-    body.store = false;
-  }
 
-  sendStreamRequest(url, config.apiKey, body, query.cancelSignal, function(stream) {
+  sendStreamRequest(PROVIDER.url, config.apiKey, body, query.cancelSignal, function(stream) {
     parseSSE(state, stream.text || "", function(event) {
       handleStreamEvent(query, state, event);
     });
