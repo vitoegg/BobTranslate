@@ -44,11 +44,11 @@
       "title": "模型",
       "identifier": "model",
       "type": "menu",
-      "defaultValue": "accounts/fireworks/models/deepseek-v4-flash-0731",
+      "defaultValue": "accounts/fireworks/models/deepseek-v4p1-flash",
       "menuValues": [
         {
-          "title": "DeepSeek V4 Flash",
-          "value": "accounts/fireworks/models/deepseek-v4-flash-0731",
+          "title": "DeepSeek V4.1 Flash",
+          "value": "accounts/fireworks/models/deepseek-v4p1-flash",
           "defaultPluginName": "DeepSeek 翻译",
           "defaultPluginIconIdentifier": "134"
         },

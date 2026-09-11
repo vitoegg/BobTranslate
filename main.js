@@ -13,9 +13,9 @@ var PROVIDERS = {
   "com.vitoegg.fireworks.bobtranslate": {
     title: "Fireworks",
     url: "https://api.fireworks.ai/inference/v1/responses",
-    defaultModel: "accounts/fireworks/models/deepseek-v4-flash-0731",
+    defaultModel: "accounts/fireworks/models/deepseek-v4p1-flash",
     models: {
-      "accounts/fireworks/models/deepseek-v4-flash-0731": true,
+      "accounts/fireworks/models/deepseek-v4p1-flash": true,
       "accounts/fireworks/models/qwen3p7-plus": true,
       "accounts/fireworks/models/minimax-m3": true
     },
