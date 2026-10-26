@@ -6,8 +6,8 @@ OpenAI、Fireworks 和 Vercel AI 的 Bob 翻译插件集合。
 
 - `openai-bob-translate.bobplugin`
   - API：OpenAI Responses API
-  - 默认模型：GPT-5.6 Luna
-  - 可选模型：GPT-5.6 Luna、GPT-5.6 Terra、自定义模型
+  - 默认模型：GPT-6 Luna
+  - 可选模型：GPT-6 Luna、自定义模型
 - `fireworks-bob-translate.bobplugin`
   - API：Fireworks Chat Completions API
   - 默认模型：DeepSeek V4 Flash

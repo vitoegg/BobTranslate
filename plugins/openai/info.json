@@ -23,15 +23,11 @@
       "identifier": "model",
       "type": "menu",
       "title": "模型",
-      "defaultValue": "gpt-5.6-luna",
+      "defaultValue": "gpt-6-luna",
       "menuValues": [
         {
-          "title": "GPT-5.6 Luna",
-          "value": "gpt-5.6-luna"
-        },
-        {
-          "title": "GPT-5.6 Terra",
-          "value": "gpt-5.6-terra"
+          "title": "GPT-6 Luna",
+          "value": "gpt-6-luna"
         },
         {
           "title": "自定义模型",
@@ -45,7 +41,7 @@
       "title": "自定义模型",
       "textConfig": {
         "type": "visible",
-        "placeholderText": "例如：gpt-5.6-luna"
+        "placeholderText": "例如：gpt-6-luna"
       },
       "desc": "仅在「模型」选择「自定义模型」时生效。"
     },
